@@ -10,6 +10,7 @@ files_to_zip = [
     "exemplo1.ws",
     "exemplos.ws",
     "README.txt",
+    "relatorio_etapa_bibliotecas.txt",
     "test_lexer.py",
     "README.pdf"
 ]
