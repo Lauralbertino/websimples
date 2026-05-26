@@ -274,3 +274,16 @@ def analisar_codigo(codigo):
     # Retornar uma lista de tuplas (conteúdo, tipo) para a interface poder estilizar
     # Tipo pode ser: 'token' ou 'erro'
     return [(item[1], item[2]) for item in elementos]
+
+# Função para obter objetos Token originais (para o tradutor HTML)
+def obter_tokens(codigo):
+    erros.clear()
+    lexer.lineno = 1
+    lexer.input(codigo)
+    toks = []
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break
+        toks.append(tok)
+    return toks, list(erros)
