@@ -1,87 +1,221 @@
-import ply.lex as lex
+
+
 from tokens import TOKENS
 
-# Lista de tokens e erros
-tokens = [
-    'ID',
-    'STRING',
-    'ATRIBUICAO',
-    'ABRE_CHAVES',
-    'FECHA_CHAVES',
-    'PONTO',
-    'COMENTARIO'
-] + list(TOKENS.values())
-
+# Lista de erros
 erros = []
 
-# Operadores e delimitadores
-t_ATRIBUICAO = r'='
-t_ABRE_CHAVES = r'\{'
-t_FECHA_CHAVES = r'\}'
-t_PONTO = r'\.'
 
-# Ignorar espaços e tabs
-t_ignore = ' \t'
+def identificar_token(palavra):
 
-# Palavras reservadas e IDs
-def t_ID(t):
-    r'[a-zA-Z][a-zA-Z0-9]*'
+    # =========================
+    # PALAVRAS RESERVADAS
+    # =========================
+    if palavra in TOKENS:
+        return TOKENS[palavra]
 
-    if t.value in TOKENS:
-        t.type = TOKENS[t.value]
-        return t
-    
-    erros.append(
-        f'ERRO LÉXICO: identificador inválido '
-        f'"{t.value}" na linha {t.lineno}'
-    )
+    # =========================
+    # IDs VÁLIDOS
+    # regra:
+    # começa com letra
+    # pode ter letras e números
+    # =========================
+    if palavra[0].isalpha():
 
-# String
-def t_STRING(t):
-    r'"[^"]*"'
-    return t
+        valido = True
 
-# Comentários
-def t_COMENTARIO(t):
-    r'\#.*'
-    return t
+        for c in palavra:
 
-# Nova linha
-def t_newline(t):
-    r'\n+'
-    t.lexer.lineno += len(t.value)
+            if not (c.isalpha() or c.isdigit()):
+                valido = False
+                break
 
-# Erros
-def t_error(t):
+        if valido:
+            return "ID"
 
-    erros.append(
-        f'ERRO LÉXICO: símbolo inválido '
-        f'"{t.value[0]}" na linha {t.lineno}'
-    )
+    return None
 
-    t.lexer.skip(1)
 
-# Criar lexer
-lexer = lex.lex()
-
-# Função principal
 def analisar_codigo(codigo):
 
-    lexer.input(codigo)
-
     resultado = []
-
     erros.clear()
 
-    while True:
+    linha_num = 1
+    i = 0
 
-        tok = lexer.token()
+    while i < len(codigo):
 
-        if not tok:
-            break
+        c = codigo[i]
 
-        resultado.append(
-            f'Linha: {tok.lineno} - Token:<{tok.type}, {tok.value}>'
+        # =========================
+        # ESPAÇOS
+        # =========================
+        if c == ' ' or c == '\t':
+            i += 1
+            continue
+
+        # =========================
+        # NOVA LINHA
+        # =========================
+        if c == '\n':
+            linha_num += 1
+            i += 1
+            continue
+
+        # =========================
+        # ATRIBUIÇÃO =
+        # =========================
+        if c == '=':
+            resultado.append(
+                f'Linha: {linha_num} - Token:<ATRIBUICAO, =>'
+            )
+            i += 1
+            continue
+
+        # =========================
+        # ABRE CHAVES {
+        # =========================
+        if c == '{':
+            resultado.append(
+                f'Linha: {linha_num} - Token:<ABRE_CHAVES, {{>'
+            )
+            i += 1
+            continue
+
+        # =========================
+        # FECHA CHAVES }
+        # =========================
+        if c == '}':
+            resultado.append(
+                f'Linha: {linha_num} - Token:<FECHA_CHAVES, }}>'
+            )
+            i += 1
+            continue
+
+        # =========================
+        # PONTO .
+        # =========================
+        if c == '.':
+            resultado.append(
+                f'Linha: {linha_num} - Token:<PONTO, .>'
+            )
+            i += 1
+            continue
+
+        # =========================
+        # COMENTÁRIO
+        # =========================
+        if c == '#':
+
+            comentario = ""
+
+            while i < len(codigo) and codigo[i] != '\n':
+                comentario += codigo[i]
+                i += 1
+
+            resultado.append(
+                f'Linha: {linha_num} - Token:<COMENTARIO, {comentario}>'
+            )
+
+            continue
+
+        # =========================
+        # STRING
+        # =========================
+        if c == '"':
+
+            string = '"'
+            i += 1
+
+            while i < len(codigo) and codigo[i] != '"':
+                string += codigo[i]
+                i += 1
+
+            # string fechada corretamente
+            if i < len(codigo):
+
+                string += '"'
+                i += 1
+
+                resultado.append(
+                    f'Linha: {linha_num} - Token:<STRING, {string}>'
+                )
+
+            else:
+
+                erros.append(
+                    f'ERRO LÉXICO: string não fechada '
+                    f'na linha {linha_num}'
+                )
+
+            continue
+
+        # =========================
+        # IDENTIFICADORES
+        # =========================
+        if c.isalpha():
+
+            palavra = ""
+
+            while i < len(codigo) and (
+                codigo[i].isalpha() or
+                codigo[i].isdigit()
+            ):
+                palavra += codigo[i]
+                i += 1
+
+            tipo = identificar_token(palavra)
+
+            # =========================
+            # SE FOR PALAVRA RESERVADA
+            # =========================
+            if palavra in TOKENS:
+
+                resultado.append(
+                    f'Linha: {linha_num} - '
+                    f'Token:<{tipo}, {palavra}>'
+                )
+
+            # =========================
+            # SE FOR ID VÁLIDO
+            # =========================
+            elif tipo == "ID":
+
+                # exemplo de regra:
+                # ID deve começar com "id"
+
+                if palavra.startswith("id"):
+
+                    resultado.append(
+                        f'Linha: {linha_num} - '
+                        f'Token:<ID, {palavra}>'
+                    )
+
+                else:
+
+                    erros.append(
+                        f'ERRO LÉXICO: identificador inválido '
+                        f'"{palavra}" na linha {linha_num}'
+                    )
+
+            else:
+
+                erros.append(
+                    f'ERRO LÉXICO: identificador inválido '
+                    f'"{palavra}" na linha {linha_num}'
+                )
+
+            continue
+
+        # =========================
+        # ERRO DE SÍMBOLO
+        # =========================
+        erros.append(
+            f'ERRO LÉXICO: símbolo inválido '
+            f'"{c}" na linha {linha_num}'
         )
+
+        i += 1
 
     return erros + resultado
