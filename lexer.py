@@ -8,9 +8,7 @@ erros = []
 
 def identificar_token(palavra):
 
-    # =========================
     # PALAVRAS RESERVADAS
-    # =========================
     if palavra in TOKENS:
         return TOKENS[palavra]
 
@@ -48,24 +46,18 @@ def analisar_codigo(codigo):
 
         c = codigo[i]
 
-        # =========================
         # ESPAÇOS
-        # =========================
         if c == ' ' or c == '\t':
             i += 1
             continue
 
-        # =========================
         # NOVA LINHA
-        # =========================
         if c == '\n':
             linha_num += 1
             i += 1
             continue
 
-        # =========================
         # ATRIBUIÇÃO =
-        # =========================
         if c == '=':
             resultado.append(
                 f'Linha: {linha_num} - Token:<ATRIBUICAO, =>'
@@ -73,9 +65,7 @@ def analisar_codigo(codigo):
             i += 1
             continue
 
-        # =========================
         # ABRE CHAVES {
-        # =========================
         if c == '{':
             resultado.append(
                 f'Linha: {linha_num} - Token:<ABRE_CHAVES, {{>'
@@ -83,9 +73,7 @@ def analisar_codigo(codigo):
             i += 1
             continue
 
-        # =========================
         # FECHA CHAVES }
-        # =========================
         if c == '}':
             resultado.append(
                 f'Linha: {linha_num} - Token:<FECHA_CHAVES, }}>'
@@ -93,9 +81,7 @@ def analisar_codigo(codigo):
             i += 1
             continue
 
-        # =========================
         # PONTO .
-        # =========================
         if c == '.':
             resultado.append(
                 f'Linha: {linha_num} - Token:<PONTO, .>'
@@ -103,9 +89,7 @@ def analisar_codigo(codigo):
             i += 1
             continue
 
-        # =========================
         # COMENTÁRIO
-        # =========================
         if c == '#':
 
             comentario = ""
@@ -120,9 +104,7 @@ def analisar_codigo(codigo):
 
             continue
 
-        # =========================
         # STRING
-        # =========================
         if c == '"':
 
             string = '"'
@@ -151,9 +133,7 @@ def analisar_codigo(codigo):
 
             continue
 
-        # =========================
         # IDENTIFICADORES
-        # =========================
         if c.isalpha():
 
             palavra = ""
@@ -167,9 +147,7 @@ def analisar_codigo(codigo):
 
             tipo = identificar_token(palavra)
 
-            # =========================
             # SE FOR PALAVRA RESERVADA
-            # =========================
             if palavra in TOKENS:
 
                 resultado.append(
@@ -177,9 +155,7 @@ def analisar_codigo(codigo):
                     f'Token:<{tipo}, {palavra}>'
                 )
 
-            # =========================
             # SE FOR ID VÁLIDO
-            # =========================
             elif tipo == "ID":
 
                 # exemplo de regra:
@@ -208,9 +184,7 @@ def analisar_codigo(codigo):
 
             continue
 
-        # =========================
         # ERRO DE SÍMBOLO
-        # =========================
         erros.append(
             f'ERRO LÉXICO: símbolo inválido '
             f'"{c}" na linha {linha_num}'
