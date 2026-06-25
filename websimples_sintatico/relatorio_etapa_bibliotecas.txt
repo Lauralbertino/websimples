@@ -1,0 +1,103 @@
+========================================================================
+    RELATÓRIO DE IMPLEMENTAÇÃO - ETAPA AUTOMÁTICA COM BIBLIOTECA
+========================================================================
+
+Este documento detalha as decisões de projeto e como os objetivos da etapa 
+"Analisador Léxico Automático com Biblioteca" foram cumpridos no compilador 
+da linguagem Websimples.
+
+------------------------------------------------------------------------
+1. CUMPRIMENTO DO OBJETIVO: "AUTOMÁTICO COM BIBLIOTECA"
+------------------------------------------------------------------------
+A principal diferença desta etapa para a etapa manual é a não necessidade de
+programar a máquina de estados (Autômato Finito Determinístico) caractere
+por caractere. 
+
+Cumprimos este objetivo utilizando a biblioteca PLY (Python Lex-Yacc):
+- Definição por Expressões Regulares (RegEx): Mapeamos os padrões dos tokens 
+  diretamente em variáveis (`t_ATRIBUICAO = r'='`) ou em docstrings de 
+  funções (`def t_NUMERO(t): r'[0-9]+\.[0-9]+|[0-9]+'`).
+- Compilação Automatizada: A função `lex.lex()` da biblioteca PLY lê as 
+  regras declaradas e constrói o autômato finito determinístico em memória 
+  de forma 100% automática.
+- Casamento de Padrões: A leitura de arquivo e extração dos lexemas ocorre
+  por meio do método automático `lexer.token()`, que avança o buffer interno
+  de leitura de forma transparente.
+
+------------------------------------------------------------------------
+2. CONSUMO DE COMENTÁRIOS E CARACTERES NÃO IMPRIMÍVEIS
+------------------------------------------------------------------------
+- Caracteres não imprimíveis (espaço, tabulação, retorno de carro) são 
+  ignorados automaticamente pelo PLY através da definição `t_ignore = ' \t\r'`.
+- As quebras de linha (`\n`) incrementam o contador interno de linha 
+  (`t.lexer.lineno += len(t.value)`), mas não geram tokens de saída.
+- Comentários de linha única (`# ...`) são descartados pelo analisador sintático
+  mas reconhecidos léxicamente como o token `COMENTARIO`.
+- Comentários de bloco (`/* ... */`) são capturados por uma expressão regular 
+  multi-linha (`r'/\*(.|\n)*?\*/'`) e consumidos corretamente.
+
+------------------------------------------------------------------------
+3. TRATAMENTO E MAPEAMENTO DE ERROS LÉXICOS
+------------------------------------------------------------------------
+O analisador léxico relaciona todas as mensagens de erro ao programa-fonte 
+calculando de forma dinâmica e precisa a Linha e a Coluna do erro. 
+Abaixo, detalhamos como os 7 tipos de erros solicitados são detectados:
+
+[ERRO 1] Símbolo não pertencente ao alfabeto da linguagem
+- Mecanismo: Quando o PLY encontra um caractere que não inicia nenhuma regra
+  válida (por exemplo, `@` isolado), ele dispara a função padrão `t_error`.
+- Detecção: O caractere inválido é capturado e reportado imediatamente como
+  símbolo não pertencente.
+
+[ERRO 2] Identificador/variável mal formado (ex: j@, 1a)
+- Mecanismo: Criamos regras específicas com prioridade elevada no topo do arquivo.
+- Detecção para '1a' (iniciado com dígito): A regra `t_ID_MAL_FORMADO_DIGITO` 
+  captura a sequência de dígitos seguida imediatamente por letras/sublinhados.
+- Detecção para 'j@' (símbolo inválido grudado): A regra `t_ID_MAL_FORMADO_CARACTERE` 
+  captura uma letra seguida por letras/números e colada a símbolos inválidos.
+
+[ERRO 3] Tamanho excessivo do identificador/variável
+- Mecanismo: Ao detectar um identificador correspondente à regra `t_ID`, 
+  avaliamos o tamanho do lexema.
+- Detecção: Se `len(t.value) > 30`, geramos um erro de tamanho excessivo.
+
+[ERRO 4] Número mal formado (ex: 2.a3)
+- Mecanismo: A regra `t_NUMERO_MAL_FORMADO` captura padrões numéricos com ponto
+  seguidos por letras (ex: `2.a3` ou `2.3a`).
+- Detecção: É gerada a mensagem "Número mal formado".
+
+[ERRO 5] Tamanho excessivo de número
+- Mecanismo: Ao identificar um número válido (regra `t_NUMERO`), contamos 
+  apenas os dígitos numéricos presentes.
+- Detecção: Se a quantidade de dígitos for maior que 10, é emitido o erro
+  "Tamanho excessivo do número (máximo de 10 dígitos)".
+
+[ERRO 6] Fim de arquivo inesperado (comentário não fechado)
+- Mecanismo: A regra `t_COMENTARIO_BLOCO_UNCLOSED` possui a RegEx `r'/\*(.|\n)*'`.
+- Detecção: Se o arquivo terminar e um bloco iniciado por `/*` não tiver sido 
+  fechado com `*/`, este padrão consome o resto do arquivo e reporta erro de
+  comentário não fechado (estado final do autômato não atingido).
+
+[ERRO 7] Char ou string mal formados (abrir aspas e não fechar)
+- Mecanismo: Implementamos regras para strings fechadas (`t_STRING`) seguidas
+  por suas respectivas regras de erro para strings não fechadas (`t_STRING_UNCLOSED`).
+- Detecção: Se a string não contiver o fecha aspas antes do fim da linha ou do arquivo,
+  ela cai na regra de erro. O mesmo tratamento foi replicado para aspas simples (`'`), 
+  aspas duplas padrão (`"`) e aspas curvas do Word (`“` e `‘`).
+
+------------------------------------------------------------------------
+4. APRESENTAÇÃO E INTERFACE GRÁFICA (IDE)
+------------------------------------------------------------------------
+Para facilitar o desenvolvimento na linguagem e permitir uma avaliação limpa:
+- Intercalação de Saída: Todos os tokens válidos e erros são consolidados 
+  em uma lista única e ordenados pela posição física (`lexpos`) em que surgiram.
+  Dessa forma, os erros aparecem inseridos no fluxo do código exatamente onde
+  foram cometidos (assim como exemplificado pelo professor no roteiro).
+- Coloração por Tags: A saída do analisador utiliza tags visuais no painel 
+  de resultados do Tkinter, permitindo destacar mensagens de erro em vermelho/rosa
+  pastel e tokens em verde pastel, tornando a leitura rápida e limpa.
+- Modelos Prontos: O usuário pode carregar com um clique um código de teste 
+  válido ou um código contendo todos os 7 erros descritos acima para fins didáticos.
+- Sincronização de Linhas: Um componente nativo desenha dinamicamente os números
+  das linhas na lateral do editor de código, facilitando a navegação.
+========================================================================

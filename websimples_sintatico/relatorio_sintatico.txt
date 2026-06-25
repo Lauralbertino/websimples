@@ -1,0 +1,40 @@
+IDE utilizada:
+- Visual Studio Code (VS Code)
+
+Como rodar o projeto:
+1. Abra o diretório websimples_sintatico no VS Code.
+2. Instale as dependências com:
+   pip install -r requirements.txt
+3. Execute o programa com:
+   python main.py
+
+Regras sintáticas adotadas (gramática):
+- Programa -> PAGINA ListaDeclarações FIM
+- ListaDeclarações -> Declaração ListaDeclarações | vazio
+- Declaração -> Comando ATRIBUICAO Valor PONTO
+- Comando -> TITULO | TEXTO | BOTAO | COR | IMAGEM | LINK | SECAO
+- Valor -> STRING | Expressao
+- Expressao -> Termo Expressao'
+- Expressao' -> MAIS Termo Expressao' | MENOS Termo Expressao' | vazio
+- Termo -> Fator Termo'
+- Termo' -> MULTIPLICACAO Fator Termo' | DIVISAO Fator Termo' | vazio
+- Fator -> NUMERO | ABRE_PARENTESES Expressao FECHA_PARENTESES | MAIS Fator | MENOS Fator
+
+O analisador agora aceita valores numéricos e expressões aritméticas em comandos, por exemplo:
+  botao = 2 + 3 * (4 - 1).
+  cor = -5 + 2.
+
+Descrição dos principais erros tratados pelo analisador sintático:
+- Palavra reservada 'pagina' ausente no início do programa.
+- Palavra reservada 'fim' ausente ao final do programa.
+- Uso de comando inválido fora da lista de declarações.
+- Falta do símbolo '=' após um comando válido.
+- Falta de valor literal STRING ou NUMERO após '='.
+- Ponto final '.' ausente ao final de cada declaração.
+- Token inesperado após o término do programa.
+
+Outras informações relevantes:
+- A interface mantém a mesma experiência visual do projeto original e adiciona um botão dedicado para Análise Sintática.
+- O analisador sintático usa a lista de tokens produzida pelo analisador léxico e informa os erros com linha e coluna.
+- A interface exibe tokens válidos, erros léxicos e resultados da análise sintática de forma clara.
+- Se houver erros léxicos, a análise sintática não é executada para evitar mensagens confusas.

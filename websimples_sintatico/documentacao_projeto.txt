@@ -1,0 +1,64 @@
+Documentação do Projeto websimples_sintatico
+
+1. IDE utilizada
+----------------
+- Visual Studio Code (VS Code)
+- Desenvolvimento realizado no Windows 10/11 com Python 3.12 e extensão Python instalada.
+
+2. Passo a passo de como rodar o projeto
+----------------------------------------
+1. Abra o diretório `websimples_sintatico` no Visual Studio Code.
+2. Certifique-se de que o Python 3.12 esteja instalado no seu sistema.
+3. Instale as dependências com:
+   ```
+   pip install -r requirements.txt
+   ```
+4. Execute o programa com:
+   ```
+   python main.py
+   ```
+5. A interface abrirá com o editor de código. Utilize os botões "Analisar Léxico" e "Analisar Sintático" para validar o código fonte.
+
+3. Descrição das regras sintáticas adotadas (gramática)
+------------------------------------------------------
+- Programa -> PAGINA ListaDeclarações FIM
+- ListaDeclarações -> Declaração ListaDeclarações | vazio
+- Declaração -> Comando ATRIBUICAO Valor PONTO
+- Comando -> TITULO | TEXTO | BOTAO | COR | IMAGEM | LINK | SECAO
+- Valor -> STRING | Expressao
+- Expressao -> Termo Expressao'
+- Expressao' -> MAIS Termo Expressao' | MENOS Termo Expressao' | vazio
+- Termo -> Fator Termo'
+- Termo' -> MULTIPLICACAO Fator Termo' | DIVISAO Fator Termo' | vazio
+- Fator -> NUMERO | ABRE_PARENTESES Expressao FECHA_PARENTESES | MAIS Fator | MENOS Fator
+
+4. Explicação dos principais erros tratados pelo analisador sintático
+-------------------------------------------------------------------
+- Palavra reservada `pagina` ausente no início do programa.
+- Palavra reservada `fim` ausente ao final do programa.
+- Comando inválido dentro do bloco da página.
+- Símbolo `=` ausente após um comando válido.
+- Valor inválido após `=`: esperava `STRING` ou expressão numérica.
+- Ponto final `.` ausente ao final da declaração.
+- Parêntese `)` ausente na expressão entre parênteses.
+- Token extra após a expressão ou número antes do ponto final.
+- Expressão incompleta ou mal formada, como `1 + . 2` ou `"a" + 1`.
+
+Exemplos de erros sintáticos comuns:
+- `pagina\n  titulo = "Minha Página"\n fim` (falta do ponto final).
+- `pagina\n  naoexiste = "X".\n fim` (comando inválido).
+- `pagina\n  texto "Sem atribuicao".\n fim` (falta `=`).
+- `pagina\n  botao = 1 + . 2.\n fim` (expressão incompleta).
+- `pagina\n  cor = (1 + 2.\n fim` (parêntese não fechado).
+- `pagina\n  botao = 1 2.\n fim` (token extra antes do ponto final).
+
+5. Outras informações relevantes sobre a implementação
+-----------------------------------------------------
+- O analisador léxico utiliza a biblioteca PLY para tokenização.
+- O parser é um analisador sintático recursivo descendente implementado em `sintatico.py`.
+- A gramática agora suporta expressões aritméticas com precedência: multiplicação/divisão antes de adição/subtração.
+- Expressões numéricas podem usar parênteses para alterar precedência e sinais unários `+` e `-`.
+- A interface separa a saída de análise léxica e sintática, exibindo somente o resultado relevante para cada botão.
+- A análise sintática é interrompida se houver erros léxicos para evitar resultados falsos positivos.
+- As regras léxicas tratam números inteiros e reais, strings com aspas normais e curvas, comentários com `#` e `/* ... */`, e identificadores válidos.
+- O projeto mantém compatibilidade com a linguagem original de páginas simples, estendendo-a para suporte aritmético sem alterar a sintaxe básica de declarações.
