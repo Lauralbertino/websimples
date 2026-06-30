@@ -24,6 +24,31 @@ tokens = [
 # Cada erro será uma tupla: (lexpos, mensagem_formatada, tipo_erro)
 erros = []
 
+# Palavras reservadas válidas da linguagem
+RESERVED_WORDS = set(TOKENS.keys())
+
+
+def levenshtein_distance(a, b):
+    """Calcula a distância de edição entre duas strings."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, start=1):
+        current = [i]
+        for j, cb in enumerate(b, start=1):
+            insertion = current[j - 1] + 1
+            deletion = previous[j] + 1
+            substitution = previous[j - 1] + (0 if ca == cb else 1)
+            current.append(min(insertion, deletion, substitution))
+        previous = current
+    return previous[-1]
+
+
 # Operadores e delimitadores básicos
 t_ATRIBUICAO = r'='
 t_ABRE_CHAVES = r'\{'
@@ -213,20 +238,39 @@ def t_ID(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
     line = t.lineno
     col = find_column(t.lexer.lexdata, t)
-    
+
+    normalized_value = t.value.lower()
+
     # Verificar se é palavra reservada
-    if t.value in TOKENS:
-        t.type = TOKENS[t.value]
-    else:
-        # Verificar limite de tamanho (exemplo: 30 caracteres)
-        if len(t.value) > 30:
+    if normalized_value in TOKENS:
+        t.type = TOKENS[normalized_value]
+        return t
+
+    # Detectar possíveis palavras reservadas mal escritas (typos)
+    if len(t.value) <= 30:
+        similar = [
+            word for word in RESERVED_WORDS
+            if abs(len(normalized_value) - len(word)) <= 1
+            and levenshtein_distance(normalized_value, word) <= 2
+        ]
+        if similar:
             erros.append((
                 t.lexpos,
-                f'Linha: {line} - Coluna {col} - ERRO LÉXICO: Tamanho do identificador/variável excessivo (máximo 30 caracteres): {t.value}',
+                f'Linha: {line} - Coluna {col} - ERRO LÉXICO: Palavra reservada incorreta ou mal escrita: {t.value} (esperava: {", ".join(sorted(similar))})',
                 'erro'
             ))
             return None
-        t.type = 'ID'
+
+    # Verificar limite de tamanho (exemplo: 30 caracteres)
+    if len(t.value) > 30:
+        erros.append((
+            t.lexpos,
+            f'Linha: {line} - Coluna {col} - ERRO LÉXICO: Tamanho do identificador/variável excessivo (máximo 30 caracteres): {t.value}',
+            'erro'
+        ))
+        return None
+
+    t.type = 'ID'
     return t
 
 # --- Regras Auxiliares ---

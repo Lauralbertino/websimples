@@ -901,11 +901,20 @@ class CompiladorApp:
         self.saida_text.config(state="normal")
         self.saida_text.delete('1.0', tk.END)
         
+        resultado_lexico = analisar_codigo(codigo)
         tokens, lex_errors = obter_tokens(codigo)
         
         total_tokens = len(tokens)
         total_erros_lexicos = len(lex_errors)
-        self.saida_text.insert(tk.END, "--- RESULTADO DA ANÁLISE SINTÁTICA ---\n\n", "titulo")
+        self.saida_text.insert(tk.END, "--- RESULTADO DA ANÁLISE LÉXICA ---\n\n", "titulo")
+        
+        for msg, tipo in resultado_lexico:
+            if tipo == "token":
+                self.saida_text.insert(tk.END, msg + "\n", "token")
+            elif tipo == "erro":
+                self.saida_text.insert(tk.END, msg + "\n", "erro")
+        
+        self.saida_text.insert(tk.END, "\n--- RESULTADO DA ANÁLISE SINTÁTICA ---\n\n", "titulo")
         
         if total_erros_lexicos > 0:
             self.saida_text.insert(

@@ -1,5 +1,6 @@
 from lexer import analisar_codigo
 
+
 def testar():
     casos = {
         "1. Token Válido Simples": 'pagina titulo = "Loja Virtual". fim',
@@ -22,6 +23,14 @@ def testar():
         for msg, tipo in resultado:
             status = "[OK]" if tipo == "token" else "[ERRO]"
             print(f"  {status} {msg}")
+
+    print("\n=== Teste de regressão: palavra reservada incorreta ===")
+    codigo = 'pagina titlo = "Loja". fim'
+    resultado = analisar_codigo(codigo)
+    mensagens = [msg for msg, tipo in resultado if tipo == 'erro']
+    assert any('Palavra reservada incorreta' in msg for msg in mensagens), mensagens
+    print('OK: palavra reservada incorreta foi detectada.')
+
 
 if __name__ == "__main__":
     testar()
