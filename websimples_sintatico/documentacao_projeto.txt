@@ -32,6 +32,33 @@ Documentação do Projeto websimples_sintatico
 - Termo' -> MULTIPLICACAO Fator Termo' | DIVISAO Fator Termo' | vazio
 - Fator -> NUMERO | ABRE_PARENTESES Expressao FECHA_PARENTESES | MAIS Fator | MENOS Fator
 
+3.1 Tabela de Tokens
+--------------------
+Token                | Lexema exemplo       | Descrição
+--------------------|----------------------|----------------------------------------------
+PAGINA              | pagina               | Início do programa
+FIM                 | fim                  | Fim do programa
+TITULO              | titulo               | Comando de título da página
+TEXTO               | texto                | Comando de texto dentro da página
+BOTÃO               | botao                | Comando de botão
+COR                 | cor                  | Comando de cor ou valor numérico
+IMAGEM              | imagem               | Comando de imagem
+LINK                | link                 | Comando de link
+SECAO               | secao                | Comando de seção
+ID                  | usuario              | Identificador válido
+STRING              | "texto"            | Literal de texto entre aspas
+NUMERO              | 123, 4.56            | Literal numérico inteiro ou real
+ATRIBUICAO          | =                    | Operador de atribuição
+PONTO               | .                    | Final de instrução
+VIRGULA             | ,                    | Separador de itens
+ABRE_PARENTESES     | (                    | Abertura de expressão entre parênteses
+FECHA_PARENTESES    | )                    | Fechamento de expressão entre parênteses
+MAIS                | +                    | Operador de adição
+MENOS               | -                    | Operador de subtração ou sinal unário
+MULTIPLICACAO       | *                    | Operador de multiplicação
+DIVISAO             | /                    | Operador de divisão
+COMENTARIO          | # comentário         | Comentário de linha ou bloco
+
 4. Explicação dos principais erros tratados pelo analisador sintático
 -------------------------------------------------------------------
 - Palavra reservada `pagina` ausente no início do programa.

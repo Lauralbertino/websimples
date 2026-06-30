@@ -1,31 +1,39 @@
 from lexer import obter_tokens, find_column
 
+# Palavras reservadas que representam comandos válidos dentro do bloco 'pagina'
 SYNTAX_KEYWORDS = {'TITULO', 'TEXTO', 'BOTAO', 'COR', 'IMAGEM', 'LINK', 'SECAO'}
 
 
 class ParseError(Exception):
+    """Exceção customizada para indicar erros de análise sintática."""
     pass
 
 
 class SintaticoParser:
     def __init__(self, codigo, tokens):
+        # Texto original do programa para calcular linha/coluna em mensagens de erro
         self.codigo = codigo
+        # Remover comentários antes da análise sintática para simplificar o parser
         self.tokens = [tok for tok in tokens if tok.type != 'COMENTARIO']
         self.pos = 0
         self.errors = []
 
     def current_token(self):
+        """Retorna o token atual ou None se chegou ao fim da lista."""
         return self.tokens[self.pos] if self.pos < len(self.tokens) else None
 
     def advance(self):
+        """Consome o token atual e avança para o próximo."""
         token = self.current_token()
         self.pos += 1
         return token
 
     def is_at_end(self):
+        """Retorna True quando não há mais tokens a processar."""
         return self.current_token() is None
 
     def error(self, token, message):
+        """Registra um erro sintático com linha e coluna no código original."""
         if token is None:
             line = self.codigo.count('\n') + 1
             col = 1
@@ -35,6 +43,7 @@ class SintaticoParser:
             self.errors.append(f"Linha: {token.lineno} - Coluna {col} - ERRO SINTÁTICO: {message}")
 
     def expect(self, token_type, message):
+        """Verifica se o token atual é do tipo esperado."""
         token = self.current_token()
         if token is None:
             self.error(token, message)
@@ -45,19 +54,22 @@ class SintaticoParser:
         return None
 
     def synchronize(self, sync_tokens=None):
+        """Avança até encontrar um token que represente ponto de recuperação."""
         if sync_tokens is None:
-            sync_tokens = set(SYNTAX_KEYWORDS) | {'PAGINA', 'FIM', 'ID'}
+            sync_tokens = set(SYNTAX_KEYWORDS) | {'PAGINA', 'FIM'}
         while self.current_token() and self.current_token().type not in sync_tokens:
             self.advance()
 
     def synchronize_statement(self):
-        sync_tokens = set(SYNTAX_KEYWORDS) | {'PAGINA', 'FIM', 'PONTO', 'ID'}
+        """Recupera o parser avançando até o fim da instrução atual."""
+        sync_tokens = set(SYNTAX_KEYWORDS) | {'PAGINA', 'FIM', 'PONTO'}
         while self.current_token() and self.current_token().type not in sync_tokens:
             self.advance()
         if self.current_token() and self.current_token().type == 'PONTO':
             self.advance()
 
     def parse(self):
+        """Ponto de entrada do parser para analisar todo o programa."""
         ast = {
             'type': 'program',
             'pagina': None,
@@ -65,6 +77,7 @@ class SintaticoParser:
             'fim': None
         }
 
+        # Espera a palavra reservada inicial 'pagina'
         if self.current_token() and self.current_token().type == 'PAGINA':
             ast['pagina'] = self.advance().value
         else:
@@ -73,16 +86,19 @@ class SintaticoParser:
             if self.current_token() and self.current_token().type == 'PAGINA':
                 ast['pagina'] = self.advance().value
 
+        # Processa todas as declarações até encontrar 'FIM'
         while self.current_token() and self.current_token().type != 'FIM':
             statement = self.parse_statement()
             if statement:
                 ast['statements'].append(statement)
 
+        # Espera a palavra reservada final 'fim'
         if self.current_token() and self.current_token().type == 'FIM':
             ast['fim'] = self.advance().value
         else:
             self.error(self.current_token(), "Esperado a palavra reservada 'fim' ao final do programa.")
 
+        # Se existir token após o fim, também é um erro
         if self.current_token():
             token = self.current_token()
             self.error(token, f"Token inesperado após o fechamento do programa: '{token.value}'")
@@ -90,6 +106,7 @@ class SintaticoParser:
         return ast
 
     def parse_statement(self):
+        """Analisa uma única instrução dentro do bloco 'pagina'."""
         token = self.current_token()
         if token is None:
             return None
@@ -102,11 +119,12 @@ class SintaticoParser:
         return None
 
     def parse_assignment(self):
+        """Analisa um comando de atribuição do tipo COMANDO = VALOR ."""
         keyword_token = self.advance()
         atribuicao = self.expect('ATRIBUICAO', f"Esperado '=' após '{keyword_token.value}'.")
 
         if atribuicao is None:
-            # Pular o resto da instrução até o ponto final ou próximo comando válido.
+            # Se não houver '=', pule a instrução até o fim para evitar erros em cascata.
             self.synchronize_statement()
             return None
 
@@ -117,8 +135,8 @@ class SintaticoParser:
         elif self.current_token() and self.current_token().type == 'PONTO':
             self.advance()
         elif value is None and last_token is not None:
-            # Quando a expressão falha e já houve sincronização no final da instrução,
-            # não adicionamos um erro extra de ponto final duplicado.
+            # Quando a análise de valor detectou erro e já sincronizou até o final,
+            # não registra um erro extra de ponto final duplicado.
             pass
         else:
             self.error(last_token or self.current_token(), "Esperado '.' ao final da instrução.")
@@ -133,6 +151,7 @@ class SintaticoParser:
         }
 
     def parse_value(self):
+        """Analisa o valor de uma atribuição, que pode ser STRING ou expressão numérica."""
         token = self.current_token()
         if token is None:
             self.error(token, "Esperado um valor após '='.")
@@ -159,6 +178,7 @@ class SintaticoParser:
         return None, True, token
 
     def parse_expression(self):
+        """Analisa expressões aritméticas com precedência de operadores."""
         node, terminated, last_token = self.parse_term()
         if terminated:
             return None, True, last_token
@@ -184,6 +204,7 @@ class SintaticoParser:
         return node, False, last_token
 
     def parse_term(self):
+        """Analisa termos da expressão que usam * ou /."""
         node, terminated, last_token = self.parse_factor()
         if terminated:
             return None, True, last_token
@@ -204,6 +225,7 @@ class SintaticoParser:
         return node, False, last_token
 
     def parse_factor(self):
+        """Analisa fatores: números, parênteses ou operadores unários."""
         token = self.current_token()
         if token is None:
             self.error(token, "Esperado um número ou '(' na expressão.")
@@ -253,6 +275,7 @@ class SintaticoParser:
         return None, True, token
 
     def get_tree_text(self, node=None, level=0):
+        """Gera uma representação em texto legível da AST."""
         if node is None:
             node = self.parse()
 
@@ -283,6 +306,7 @@ class SintaticoParser:
 
 
 def analisar_sintatico(codigo):
+    """Função pública que realiza a análise sintática do código completo."""
     tokens, lex_errors = obter_tokens(codigo)
     parser = SintaticoParser(codigo, tokens)
     ast = parser.parse()
